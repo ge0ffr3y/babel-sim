@@ -5,19 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
     <title>Babel</title>
-    <script type="module" crossorigin src="/babel-sim/assets/index-CDfiXEK-.js"></script>
-    <link rel="stylesheet" crossorigin href="/babel-sim/assets/index-BW8mge6R.css">
+    <script type="module" crossorigin src="/babel-sim/assets/index-DI6Mu4v-.js"></script>
+    <link rel="stylesheet" crossorigin href="/babel-sim/assets/index-CLx1fR1x.css">
   </head>
   <body>
     <header class="page-header">
       <h1>Babel</h1>
-      <p>Agents with no shared language invent words, grammar and dialects, and one day will build a tower with them. In each round a foreman sees the plan and calls for a piece; a builder must pick that piece out of the pile using only the word. Nobody is told any words and nobody is in charge: a shared vocabulary, and local dialects, appear from random babble. Right pieces raise the tower; wrong ones become rubble.</p>
+      <p>People with no shared language invent words, grammar and dialects, and use them to build a tower. A foreman sees the plan and calls for a piece; a builder must bring the right one using only the word. Nobody is told any words and nobody is in charge. In the town, foremen and builders work in teams, children learn from their parents, and everyone else overhears and chats, and can learn their way onto the crew. Right pieces raise the tower; wrong ones are wasted. The other presets are the lab experiments the town is built on.</p>
     </header>
 
     <main class="layout">
       <aside class="side-panel">
         <section class="clock" aria-live="polite">
-          <p class="clock-label">Round</p>
+          <p id="clock-label" class="clock-label">Round</p>
           <p id="tick" class="clock-value">0</p>
           <p id="status" class="clock-status">Paused</p>
         </section>
@@ -40,8 +40,8 @@
           <h3>Setup</h3>
           <div class="setup">
             <label>Preset <select id="cfg-preset"></select></label>
-            <label>Agents <input id="cfg-agents" type="number" min="2" max="2500" step="1" value="100" inputmode="numeric" /></label>
-            <label>Who talks to whom
+            <label class="lab-setup">Agents <input id="cfg-agents" type="number" min="2" max="2500" step="1" value="100" inputmode="numeric" /></label>
+            <label class="lab-setup">Who talks to whom
               <select id="cfg-topology">
                 <option value="mixed">Everyone</option>
                 <option value="ring">Ring</option>
@@ -56,29 +56,39 @@
                 <option value="neural">Neural nets</option>
               </select>
             </label>
-            <label class="checkbox"><input id="cfg-reveal" type="checkbox" /> Show the answer after a mistake</label>
-            <label>Things to talk about <select id="cfg-schema"></select></label>
+            <label class="lab-setup checkbox"><input id="cfg-reveal" type="checkbox" /> Show the answer after a mistake</label>
+            <label class="lab-setup">Things to talk about <select id="cfg-schema"></select></label>
             <label>Symbols <input id="cfg-alphabet" type="number" min="2" max="60" step="1" value="8" inputmode="numeric" /></label>
             <label>Longest word <input id="cfg-maxlen" type="number" min="1" max="4" step="1" value="1" inputmode="numeric" /></label>
-            <label>Wrong pieces in the pile <input id="cfg-distractors" type="number" min="1" step="1" value="7" inputmode="numeric" /></label>
-            <label>The wrong pieces are
+            <label class="lab-setup">Wrong pieces in the pile <input id="cfg-distractors" type="number" min="1" step="1" value="7" inputmode="numeric" /></label>
+            <label class="lab-setup">The wrong pieces are
               <select id="cfg-distractor-mode">
                 <option value="random">Any others</option>
                 <option value="one-different">Different in one part only</option>
               </select>
             </label>
-            <label>Never-seen orders (%) <input id="cfg-heldout" type="number" min="0" max="90" step="5" value="0" inputmode="numeric" /></label>
-            <label>Mishearing (% of syllables) <input id="cfg-noise" type="number" min="0" max="100" step="1" value="0" inputmode="numeric" /></label>
-            <label>Score table learning
+            <label class="lab-setup">Never-seen orders (%) <input id="cfg-heldout" type="number" min="0" max="90" step="5" value="0" inputmode="numeric" /></label>
+            <label class="lab-setup">Mishearing (% of syllables) <input id="cfg-noise" type="number" min="0" max="100" step="1" value="0" inputmode="numeric" /></label>
+            <label class="lab-setup">Score table learning
               <select id="cfg-learning">
                 <option value="1" selected>Success and failure both teach</option>
                 <option value="0">Only success teaches</option>
               </select>
             </label>
-            <label>Rounds per generation (0 = nobody retires) <input id="cfg-generation-rounds" type="number" min="0" step="500" value="0" inputmode="numeric" /></label>
-            <label>Pupils are taught (% of the orders) <input id="cfg-transmission-share" type="number" min="1" max="100" step="5" value="50" inputmode="numeric" /></label>
-            <label>Times each lesson is repeated <input id="cfg-transmission-passes" type="number" min="1" max="1000" step="1" value="10" inputmode="numeric" /></label>
-            <label class="checkbox"><input id="cfg-replace-builder" type="checkbox" checked /> The builder retires too</label>
+            <label class="lab-setup">Rounds per generation (0 = nobody retires) <input id="cfg-generation-rounds" type="number" min="0" step="500" value="0" inputmode="numeric" /></label>
+            <label class="lab-setup">Pupils are taught (% of the orders) <input id="cfg-transmission-share" type="number" min="1" max="100" step="5" value="50" inputmode="numeric" /></label>
+            <label class="lab-setup">Times each lesson is repeated <input id="cfg-transmission-passes" type="number" min="1" max="1000" step="1" value="10" inputmode="numeric" /></label>
+            <label class="lab-setup checkbox"><input id="cfg-replace-builder" type="checkbox" checked /> The builder retires too</label>
+            <label class="town-setup">Founders <input id="cfg-town-people" type="number" min="12" max="400" step="1" value="60" inputmode="numeric" /></label>
+            <label class="town-setup">Foremen <input id="cfg-foremen" type="number" min="1" max="20" step="1" value="3" inputmode="numeric" /></label>
+            <label class="town-setup">Builders <input id="cfg-builders" type="number" min="1" max="60" step="1" value="9" inputmode="numeric" /></label>
+            <label class="town-setup">Relays up the tower
+              <select id="cfg-relay-mode">
+                <option value="repeat">Repeat the word they heard</option>
+                <option value="reinterpret">Say what they think was meant</option>
+              </select>
+            </label>
+            <label class="checkbox town-setup"><input id="cfg-town-controls" type="checkbox" checked /> Also run a scrambled and a mute town (for comparison; slower)</label>
             <label>Seed <input id="seed" type="number" value="42" step="1" inputmode="numeric" /></label>
           </div>
           <div class="row">
@@ -95,6 +105,60 @@
       </aside>
 
       <section class="main-panel">
+        <section id="town-panel" class="town-panel" aria-label="The town" hidden>
+          <h2>The town</h2>
+          <p id="town-status" class="hint"></p>
+          <div class="town-frame"><canvas id="town-map" aria-label="The town map: the tower site at the centre, homes around it, people as dots coloured by role, and speech bubbles for the latest conversations. Click someone to inspect them."></canvas></div>
+          <div class="legend town-legend">
+            <span class="legend-item"><span class="dot" style="--dot: var(--warn)"></span> foreman</span>
+            <span class="legend-item"><span class="dot" style="--dot: var(--accent)"></span> builder</span>
+            <span class="legend-item"><span class="dot" style="--dot: var(--muted)"></span> non-specialist (small: child)</span>
+            <span class="legend-item">orange bubbles: orders at the tower; grey: chat</span>
+          </div>
+          <div id="town-person" class="town-person" hidden></div>
+        </section>
+
+        <section id="town-tower-panel" class="town-tower-panel" aria-label="The tower" hidden>
+          <h2>The tower</h2>
+          <p class="hint">The level being built, slot by slot (coloured once the right piece is in), on top of the levels below. The plan calls for more slots, new kinds of piece and longer relays as the tower rises.</p>
+          <div class="tower-frame"><canvas id="town-tower" aria-label="The tower, side on, with the level being built on top"></canvas></div>
+          <div id="town-tower-legend" class="tower-legend"></div>
+          <p id="town-tower-caption" class="hint"></p>
+          <h3>The latest order</h3>
+          <p id="town-order" class="town-order"></p>
+        </section>
+
+        <section id="town-team-panel" class="grid-section" aria-label="Team words" hidden>
+          <div class="section-header">
+            <h2>Each team's words</h2>
+            <label>Team <select id="town-team"></select></label>
+          </div>
+          <p class="hint">A foreman's favourite word for every order, laid out by piece and size, one grid per place. Builders work in teams, one per foreman, so each team can grow its own dialect. Dashed cells are kinds of piece the plan hasn't called for yet.</p>
+          <div id="town-team-grid" class="grids"></div>
+        </section>
+
+        <section id="town-charts" class="charts-panel" aria-label="Town charts" hidden>
+          <h2>How the town is doing</h2>
+          <div class="charts">
+            <figure>
+              <figcaption>Tower height (levels): the talking town against a scrambled and a mute town with the same seed</figcaption>
+              <div id="chart-town-level" class="chart"></div>
+            </figure>
+            <figure>
+              <figcaption>Right pieces (recent orders): talking, scrambled and mute</figcaption>
+              <div id="chart-town-success" class="chart"></div>
+            </figure>
+            <figure>
+              <figcaption>People: everyone, non-specialists and the crew</figcaption>
+              <div id="chart-town-people" class="chart"></div>
+            </figure>
+            <figure>
+              <figcaption>How well adult non-specialists understand the foremen (as builders), against the builders' own median: measured once a year</figcaption>
+              <div id="chart-town-fluency" class="chart"></div>
+            </figure>
+          </div>
+        </section>
+
         <section id="population-panel" class="population-panel" aria-label="The population" hidden>
           <div class="section-header">
             <h2>The population</h2>
@@ -117,7 +181,7 @@
 
         <section id="events-panel" class="events-panel" aria-label="What happened" hidden>
           <h2>What happened</h2>
-          <p class="hint">Found by surveying every agent at fixed round numbers, so the same seed always tells the same story. Newest first.</p>
+          <p id="events-hint" class="hint">Found by surveying every agent at fixed round numbers, so the same seed always tells the same story. Newest first.</p>
           <ol id="events" class="events"></ol>
         </section>
 
