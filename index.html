@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Emergent Language Sim</title>
+    <script type="module" crossorigin src="/babel-sim/assets/index-DUpX8zMG.js"></script>
+    <link rel="stylesheet" crossorigin href="/babel-sim/assets/index-COOHCB9E.css">
+  </head>
+  <body>
+    <header class="page-header">
+      <h1>Emergent Language Sim</h1>
+      <p>Agents with no shared language invent words, grammar, dialects and language families. In each round one agent sees an object and says a word; a neighbour must pick that object out of a lineup using only the word. Nobody is told any words and nobody is in charge: watch a shared vocabulary, and local dialects, appear from random babble.</p>
+    </header>
+
+    <main class="layout">
+      <aside class="side-panel">
+        <section class="clock" aria-live="polite">
+          <p class="clock-label">Round</p>
+          <p id="tick" class="clock-value">0</p>
+          <p id="status" class="clock-status">Paused</p>
+        </section>
+
+        <section class="controls" aria-label="Simulation controls">
+          <div class="row">
+            <button id="play" type="button" class="primary">Play</button>
+            <button id="step" type="button">+1 round</button>
+            <label>Speed
+              <select id="speed">
+                <option value="1">1 round/s</option>
+                <option value="10">10 rounds/s</option>
+                <option value="100">100 rounds/s</option>
+                <option value="1000" selected>1,000 rounds/s</option>
+                <option value="10000">10,000 rounds/s</option>
+                <option value="max">As fast as possible</option>
+              </select>
+            </label>
+          </div>
+          <h3>Setup</h3>
+          <div class="setup">
+            <label>Preset <select id="cfg-preset"></select></label>
+            <label>Agents <input id="cfg-agents" type="number" min="2" max="2500" step="1" value="100" inputmode="numeric" /></label>
+            <label>Who talks to whom
+              <select id="cfg-topology">
+                <option value="mixed">Everyone</option>
+                <option value="ring">Ring</option>
+                <option value="grid">Grid</option>
+                <option value="small-world">Small world</option>
+              </select>
+            </label>
+            <label>Learner
+              <select id="cfg-learner">
+                <option value="naming">Naming game</option>
+                <option value="table">Score table</option>
+              </select>
+            </label>
+            <label class="checkbox"><input id="cfg-reveal" type="checkbox" /> Show the answer after a mistake</label>
+            <label>Objects <select id="cfg-schema"></select></label>
+            <label>Symbols <input id="cfg-alphabet" type="number" min="2" max="60" step="1" value="8" inputmode="numeric" /></label>
+            <label>Longest word <input id="cfg-maxlen" type="number" min="1" max="4" step="1" value="1" inputmode="numeric" /></label>
+            <label>Wrong objects in the lineup <input id="cfg-distractors" type="number" min="1" step="1" value="7" inputmode="numeric" /></label>
+            <label>Score table learning
+              <select id="cfg-learning">
+                <option value="1" selected>Success and failure both teach</option>
+                <option value="0">Only success teaches</option>
+              </select>
+            </label>
+            <label>Seed <input id="seed" type="number" value="42" step="1" inputmode="numeric" /></label>
+          </div>
+          <div class="row">
+            <button id="restart" type="button">Restart with these settings</button>
+          </div>
+          <p id="error" class="error" role="alert" hidden></p>
+        </section>
+
+        <p class="fingerprint">Fingerprint: <code id="fingerprint">…</code></p>
+      </aside>
+
+      <section class="main-panel">
+        <section id="population-panel" class="population-panel" aria-label="The population" hidden>
+          <div class="section-header">
+            <h2>The population</h2>
+            <label>Coloured by the word for <select id="view-meaning"></select></label>
+          </div>
+          <p id="network-note" class="hint"></p>
+          <div class="population-frame"><canvas id="population" aria-label="Each agent as a dot, coloured by its favourite word for the chosen object. Click an agent to see its own dictionary."></canvas></div>
+          <div id="legend" class="legend"></div>
+          <div id="agent" class="agent-view" hidden></div>
+        </section>
+
+        <section id="pop-dictionary-panel" class="dictionary-panel" aria-label="Population dictionary" hidden>
+          <h2>Dictionary of the population</h2>
+          <p class="hint">For each object: the word most agents use (bar = share of all agents), the runners-up, and how many agents have no word yet.</p>
+          <div class="table-wrap"><table id="pop-dictionary" class="dictionary live"></table></div>
+          <h3>Translation</h3>
+          <p class="hint">A few agents spread across the population, and their word for each object. Where they differ, you're looking at dialects.</p>
+          <div class="table-wrap"><table id="translation" class="dictionary live translation"></table></div>
+        </section>
+
+        <section id="events-panel" class="events-panel" aria-label="What happened" hidden>
+          <h2>What happened</h2>
+          <p class="hint">Found by surveying every agent at fixed round numbers, so the same seed always tells the same story. Newest first.</p>
+          <ol id="events" class="events"></ol>
+        </section>
+
+        <section id="lab-dictionary-panel" class="dictionary-panel" aria-label="Dictionary">
+          <h2>Dictionary</h2>
+          <p class="hint">What the speaker says for each object (bar = how often it uses that word), and what the listener takes that word to mean. A tick means they agree. Found by asking both agents, without teaching them anything.</p>
+          <div class="table-wrap"><table id="dictionary" class="dictionary live"></table></div>
+          <h3>The listener's side</h3>
+          <p class="hint">What the listener thinks each word means, most confident first.</p>
+          <div class="table-wrap"><table id="listener" class="dictionary live"></table></div>
+        </section>
+
+        <section class="charts-panel" aria-label="Charts">
+          <h2>How it's going</h2>
+          <div class="charts">
+            <figure>
+              <figcaption>Success (last 200 rounds), against guessing and the scrambled-channel control</figcaption>
+              <div id="chart-success" class="chart"></div>
+              <p class="hint">The control runs the same seed, but the listener hears a word from some other round. It should stay at chance: if it rose, information would be leaking around the words.</p>
+            </figure>
+            <figure class="lab-only">
+              <figcaption>Words in use (said at least 20% of the time for some object)</figcaption>
+              <div id="chart-words" class="chart"></div>
+            </figure>
+            <figure class="lab-only">
+              <figcaption>Synonyms (an object with two words) and homonyms (a word for two objects)</figcaption>
+              <div id="chart-confusions" class="chart"></div>
+            </figure>
+            <figure class="pop-only">
+              <figcaption>Agreement: chance two random agents use the same word, and the share using the most common word (averaged over objects)</figcaption>
+              <div id="chart-agreement" class="chart"></div>
+            </figure>
+            <figure class="pop-only">
+              <figcaption>Different words per object in the population, and dialect regions (connected patches of agents sharing a word)</figcaption>
+              <div id="chart-dialects" class="chart"></div>
+            </figure>
+          </div>
+        </section>
+
+        <section class="toys" aria-label="Toy languages">
+          <div class="section-header">
+            <h2>Toy languages</h2>
+            <label>Meanings <select id="toy-schema"></select></label>
+          </div>
+          <p id="toy-schema-description" class="hint"></p>
+          <p class="hint">Languages built by hand, with known structure, to check that every measurement means what it says before any agent invents anything. Click a row to see its dictionary.</p>
+          <div class="table-wrap"><table id="toy-scores" class="scores"></table></div>
+          <p class="hint">
+            <b>Topographic similarity</b>: do similar meanings get similar words? (1 = always, 0 = no relation).
+            <b>Positional</b>: does each slot of the word stand for one attribute?
+            <b>Bag of symbols</b>: does each syllable stand for one attribute, wherever it goes?
+            <b>Information</b>: how much of the meaning the word pins down.
+            <b>Ideal listener</b>: the best any listener could do.
+            Compositionality can't be measured with only one attribute ("n/a").
+          </p>
+          <h3 id="toy-title"></h3>
+          <p id="toy-description" class="hint"></p>
+          <div class="table-wrap"><table id="toy-dictionary" class="dictionary"></table></div>
+        </section>
+      </section>
+    </main>
+
+  </body>
+</html>
