@@ -4,14 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <title>Emergent Language Sim</title>
-    <script type="module" crossorigin src="/babel-sim/assets/index-DUpX8zMG.js"></script>
-    <link rel="stylesheet" crossorigin href="/babel-sim/assets/index-COOHCB9E.css">
+    <title>Babel</title>
+    <script type="module" crossorigin src="/babel-sim/assets/index-CDfiXEK-.js"></script>
+    <link rel="stylesheet" crossorigin href="/babel-sim/assets/index-BW8mge6R.css">
   </head>
   <body>
     <header class="page-header">
-      <h1>Emergent Language Sim</h1>
-      <p>Agents with no shared language invent words, grammar, dialects and language families. In each round one agent sees an object and says a word; a neighbour must pick that object out of a lineup using only the word. Nobody is told any words and nobody is in charge: watch a shared vocabulary, and local dialects, appear from random babble.</p>
+      <h1>Babel</h1>
+      <p>Agents with no shared language invent words, grammar and dialects, and one day will build a tower with them. In each round a foreman sees the plan and calls for a piece; a builder must pick that piece out of the pile using only the word. Nobody is told any words and nobody is in charge: a shared vocabulary, and local dialects, appear from random babble. Right pieces raise the tower; wrong ones become rubble.</p>
     </header>
 
     <main class="layout">
@@ -53,24 +53,41 @@
               <select id="cfg-learner">
                 <option value="naming">Naming game</option>
                 <option value="table">Score table</option>
+                <option value="neural">Neural nets</option>
               </select>
             </label>
             <label class="checkbox"><input id="cfg-reveal" type="checkbox" /> Show the answer after a mistake</label>
-            <label>Objects <select id="cfg-schema"></select></label>
+            <label>Things to talk about <select id="cfg-schema"></select></label>
             <label>Symbols <input id="cfg-alphabet" type="number" min="2" max="60" step="1" value="8" inputmode="numeric" /></label>
             <label>Longest word <input id="cfg-maxlen" type="number" min="1" max="4" step="1" value="1" inputmode="numeric" /></label>
-            <label>Wrong objects in the lineup <input id="cfg-distractors" type="number" min="1" step="1" value="7" inputmode="numeric" /></label>
+            <label>Wrong pieces in the pile <input id="cfg-distractors" type="number" min="1" step="1" value="7" inputmode="numeric" /></label>
+            <label>The wrong pieces are
+              <select id="cfg-distractor-mode">
+                <option value="random">Any others</option>
+                <option value="one-different">Different in one part only</option>
+              </select>
+            </label>
+            <label>Never-seen orders (%) <input id="cfg-heldout" type="number" min="0" max="90" step="5" value="0" inputmode="numeric" /></label>
+            <label>Mishearing (% of syllables) <input id="cfg-noise" type="number" min="0" max="100" step="1" value="0" inputmode="numeric" /></label>
             <label>Score table learning
               <select id="cfg-learning">
                 <option value="1" selected>Success and failure both teach</option>
                 <option value="0">Only success teaches</option>
               </select>
             </label>
+            <label>Rounds per generation (0 = nobody retires) <input id="cfg-generation-rounds" type="number" min="0" step="500" value="0" inputmode="numeric" /></label>
+            <label>Pupils are taught (% of the orders) <input id="cfg-transmission-share" type="number" min="1" max="100" step="5" value="50" inputmode="numeric" /></label>
+            <label>Times each lesson is repeated <input id="cfg-transmission-passes" type="number" min="1" max="1000" step="1" value="10" inputmode="numeric" /></label>
+            <label class="checkbox"><input id="cfg-replace-builder" type="checkbox" checked /> The builder retires too</label>
             <label>Seed <input id="seed" type="number" value="42" step="1" inputmode="numeric" /></label>
           </div>
           <div class="row">
             <button id="restart" type="button">Restart with these settings</button>
           </div>
+          <label class="file-load">Or start from a trained pair (a <code>--save-weights</code> file from TypeScript or Python)
+            <input id="load-weights" type="file" accept=".json,application/json" />
+          </label>
+          <p id="loaded-weights" class="hint" hidden></p>
           <p id="error" class="error" role="alert" hidden></p>
         </section>
 
@@ -104,12 +121,59 @@
           <ol id="events" class="events"></ol>
         </section>
 
+        <section id="tower-panel" class="tower-panel" aria-label="The tower">
+          <h2>The tower</h2>
+          <p class="hint">Every round the builder gets right puts the ordered piece on top (coloured by kind); every wrong piece goes on the rubble pile. The tower is only a picture of the success count: the agents can't see it.</p>
+          <div class="tower-frame"><canvas id="tower" aria-label="The tower, built from every right piece, with a pile of rubble from the wrong ones"></canvas></div>
+          <div id="tower-legend" class="tower-legend"></div>
+          <p id="tower-caption" class="hint"></p>
+        </section>
+
+        <section id="generations-panel" class="generations-panel" aria-label="Generations" hidden>
+          <div class="section-header">
+            <h2>Generations</h2>
+            <label>Word history for <select id="etymology-meaning"></select></label>
+          </div>
+          <p id="generation-status" class="hint"></p>
+          <p class="hint">At the end of each generation the foreman and builder retire. Two pupils are taught some of the old foreman's words, then must work out the rest by playing. A language that can be rebuilt from a few examples survives the handover: watch the words for related orders start to share syllables.</p>
+          <ol id="etymology" class="etymology"></ol>
+          <div class="charts">
+            <figure>
+              <figcaption>Each retiring pair's test: orders in play, never-seen orders, and guessing</figcaption>
+              <div id="chart-gen-test" class="chart"></div>
+            </figure>
+            <figure>
+              <figcaption>Are the words built from parts? (each retiring foreman: topographic similarity, positional, bag of symbols)</figcaption>
+              <div id="chart-gen-composition" class="chart"></div>
+            </figure>
+            <figure>
+              <figcaption>How much changed in the handover: drift (0 = same words, 1 = all new)</figcaption>
+              <div id="chart-gen-drift" class="chart"></div>
+            </figure>
+          </div>
+        </section>
+
+        <section id="brain-panel" class="brain-panel" aria-label="Inside their heads" hidden>
+          <div class="section-header">
+            <h2>Inside their heads</h2>
+            <label>Order <select id="brain-meaning"></select></label>
+          </div>
+          <p class="hint">Each square is one hidden unit of a tiny neural network (orange = on, blue = off). The foreman's network turns the order into a word, one syllable slot at a time; the builder's network turns the foreman's favourite word into a guess for each part. Asked without teaching them anything.</p>
+          <div id="brain" class="brain"></div>
+        </section>
+
+        <section id="grid-panel" class="grid-section compose-only" aria-label="The foreman's words as a grid">
+          <h2>The foreman's words, as a grid</h2>
+          <p class="hint">Rows and columns are the parts of an order; each syllable is coloured by which syllable it is. If words were built from parts (one syllable for the piece, one for the size…), you'd see stripes; one-off memorized words look like confetti. Dashed cells are never-seen orders, and a dot means no favourite word yet.</p>
+          <div id="grid" class="grids"></div>
+        </section>
+
         <section id="lab-dictionary-panel" class="dictionary-panel" aria-label="Dictionary">
           <h2>Dictionary</h2>
-          <p class="hint">What the speaker says for each object (bar = how often it uses that word), and what the listener takes that word to mean. A tick means they agree. Found by asking both agents, without teaching them anything.</p>
+          <p class="hint">What the foreman says for each order (bar = how often it uses that word), and what the builder takes that word to mean. A tick means they agree. Found by asking both agents, without teaching them anything.</p>
           <div class="table-wrap"><table id="dictionary" class="dictionary live"></table></div>
-          <h3>The listener's side</h3>
-          <p class="hint">What the listener thinks each word means, most confident first.</p>
+          <h3>The builder's side</h3>
+          <p class="hint">What the builder thinks each word means, most confident first.</p>
           <div class="table-wrap"><table id="listener" class="dictionary live"></table></div>
         </section>
 
@@ -119,7 +183,16 @@
             <figure>
               <figcaption>Success (last 200 rounds), against guessing and the scrambled-channel control</figcaption>
               <div id="chart-success" class="chart"></div>
-              <p class="hint">The control runs the same seed, but the listener hears a word from some other round. It should stay at chance: if it rose, information would be leaking around the words.</p>
+              <p class="hint">The control runs the same seed, but the listener hears a word from some other round. It must never rise above chance: if it did, information would be leaking around the words. With wrong pieces that differ in one part it can sit a little below chance: a builder with no information still leans towards some pieces, and the right piece has its favourite part only a quarter of the time.</p>
+            </figure>
+            <figure class="lab-only compose-only">
+              <figcaption>Test on fixed lineups: success on orders used in play, on never-seen orders, and guessing</figcaption>
+              <div id="chart-generalization" class="chart"></div>
+              <p class="hint">Worked out by asking both agents, not by playing, so testing never changes the run. Never-seen orders are tested in lineups of other never-seen orders, so the builder can't win by picking the one piece it doesn't recognise.</p>
+            </figure>
+            <figure class="lab-only compose-only">
+              <figcaption>Are words built from parts? Topographic similarity, positional and bag-of-symbols scores (1 = perfectly built from parts, 0 = no relation)</figcaption>
+              <div id="chart-composition" class="chart"></div>
             </figure>
             <figure class="lab-only">
               <figcaption>Words in use (said at least 20% of the time for some object)</figcaption>
@@ -158,6 +231,7 @@
           </p>
           <h3 id="toy-title"></h3>
           <p id="toy-description" class="hint"></p>
+          <div id="toy-grid" class="grids"></div>
           <div class="table-wrap"><table id="toy-dictionary" class="dictionary"></table></div>
         </section>
       </section>
