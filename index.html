@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
     <title>Babel</title>
-    <script type="module" crossorigin src="/babel-sim/assets/index-DI6Mu4v-.js"></script>
-    <link rel="stylesheet" crossorigin href="/babel-sim/assets/index-CLx1fR1x.css">
+    <script type="module" crossorigin src="/babel-sim/assets/index-DYPEA7S-.js"></script>
+    <link rel="stylesheet" crossorigin href="/babel-sim/assets/index-da8KAfaL.css">
   </head>
   <body>
     <header class="page-header">
       <h1>Babel</h1>
-      <p>People with no shared language invent words, grammar and dialects, and use them to build a tower. A foreman sees the plan and calls for a piece; a builder must bring the right one using only the word. Nobody is told any words and nobody is in charge. In the town, foremen and builders work in teams, children learn from their parents, and everyone else overhears and chats, and can learn their way onto the crew. Right pieces raise the tower; wrong ones are wasted. The other presets are the lab experiments the town is built on.</p>
+      <p>People with no shared language invent words, grammar and dialects, and use them to build a tower. A foreman sees the plan and calls for a piece; a builder must bring the right one using only the word. Nobody is told any words and nobody is in charge. In the town, foremen and builders work in teams, farmers, foragers, artisans, merchants and shopkeepers feed the town and bring the bricks, children learn from their parents and at school, scientists discover things nobody has a word for, and everyone else overhears and chats, and can learn their way into a trade. Right pieces raise the tower; wrong ones are wasted. The other presets are the lab experiments the town is built on.</p>
     </header>
 
     <main class="layout">
@@ -79,9 +79,22 @@
             <label class="lab-setup">Pupils are taught (% of the orders) <input id="cfg-transmission-share" type="number" min="1" max="100" step="5" value="50" inputmode="numeric" /></label>
             <label class="lab-setup">Times each lesson is repeated <input id="cfg-transmission-passes" type="number" min="1" max="1000" step="1" value="10" inputmode="numeric" /></label>
             <label class="lab-setup checkbox"><input id="cfg-replace-builder" type="checkbox" checked /> The builder retires too</label>
+            <label class="town-setup">Economy
+              <select id="cfg-economy">
+                <option value="market">Market (trades make and sell everything)</option>
+                <option value="granary">Granary (food just appears)</option>
+              </select>
+            </label>
             <label class="town-setup">Founders <input id="cfg-town-people" type="number" min="12" max="400" step="1" value="60" inputmode="numeric" /></label>
             <label class="town-setup">Foremen <input id="cfg-foremen" type="number" min="1" max="20" step="1" value="3" inputmode="numeric" /></label>
             <label class="town-setup">Builders <input id="cfg-builders" type="number" min="1" max="60" step="1" value="9" inputmode="numeric" /></label>
+            <label class="town-setup market-setup">Farmers <input id="cfg-farmers" type="number" min="0" max="60" step="1" value="8" inputmode="numeric" /></label>
+            <label class="town-setup market-setup">Foragers <input id="cfg-foragers" type="number" min="0" max="60" step="1" value="6" inputmode="numeric" /></label>
+            <label class="town-setup market-setup">Artisans <input id="cfg-artisans" type="number" min="0" max="60" step="1" value="3" inputmode="numeric" /></label>
+            <label class="town-setup market-setup">Merchants <input id="cfg-merchants" type="number" min="0" max="60" step="1" value="4" inputmode="numeric" /></label>
+            <label class="town-setup market-setup">Shopkeepers <input id="cfg-shopkeepers" type="number" min="0" max="60" step="1" value="2" inputmode="numeric" /></label>
+            <label class="town-setup market-setup">Teachers (0 = no school) <input id="cfg-teachers" type="number" min="0" max="20" step="1" value="3" inputmode="numeric" /></label>
+            <label class="town-setup market-setup">Scientists (0 = no academy) <input id="cfg-scientists" type="number" min="0" max="20" step="1" value="3" inputmode="numeric" /></label>
             <label class="town-setup">Relays up the tower
               <select id="cfg-relay-mode">
                 <option value="repeat">Repeat the word they heard</option>
@@ -89,6 +102,19 @@
               </select>
             </label>
             <label class="checkbox town-setup"><input id="cfg-town-controls" type="checkbox" checked /> Also run a scrambled and a mute town (for comparison; slower)</label>
+            <label class="town-setup">Wrong pieces offered
+              <select id="cfg-town-lineups">
+                <option value="one-different">Each differs in one part (the shape can give it away)</option>
+                <option value="same-part">All differ in the same part (fair)</option>
+              </select>
+            </label>
+            <label class="town-setup">The scrambled town
+              <select id="cfg-scramble-control">
+                <option value="classic">Classic: only the listener hears a swapped word</option>
+                <option value="strict">Strict: bystanders hear swapped words too</option>
+              </select>
+            </label>
+            <label class="checkbox town-setup market-setup"><input id="cfg-town-noschool" type="checkbox" checked /> Also run the same town with no school (for comparison; slower)</label>
             <label>Seed <input id="seed" type="number" value="42" step="1" inputmode="numeric" /></label>
           </div>
           <div class="row">
@@ -109,12 +135,7 @@
           <h2>The town</h2>
           <p id="town-status" class="hint"></p>
           <div class="town-frame"><canvas id="town-map" aria-label="The town map: the tower site at the centre, homes around it, people as dots coloured by role, and speech bubbles for the latest conversations. Click someone to inspect them."></canvas></div>
-          <div class="legend town-legend">
-            <span class="legend-item"><span class="dot" style="--dot: var(--warn)"></span> foreman</span>
-            <span class="legend-item"><span class="dot" style="--dot: var(--accent)"></span> builder</span>
-            <span class="legend-item"><span class="dot" style="--dot: var(--muted)"></span> non-specialist (small: child)</span>
-            <span class="legend-item">orange bubbles: orders at the tower; grey: chat</span>
-          </div>
+          <div id="town-legend" class="legend town-legend"></div>
           <div id="town-person" class="town-person" hidden></div>
         </section>
 
@@ -128,13 +149,35 @@
           <p id="town-order" class="town-order"></p>
         </section>
 
-        <section id="town-team-panel" class="grid-section" aria-label="Team words" hidden>
+        <section id="town-market-panel" class="town-market-panel" aria-label="The market" hidden>
+          <h2>The market</h2>
+          <p class="hint">Farmers and foragers sell to merchants, who carry food to the shops, clay to the workshops and bricks to the tower. In every deal the buyer says what they want and the seller hands over what they understood: wrong goods are refused and wasted.</p>
+          <p id="town-market-summary" class="hint"></p>
+          <div id="town-market" class="market"></div>
+        </section>
+
+        <section id="town-school-panel" class="town-market-panel" aria-label="The school" hidden>
+          <h2>Childhood and the school</h2>
+          <p class="hint">Young children stay at home and learn a few of their parent's words every evening, so a farmer's child grows up with farm words. From 6 they spend the working day at school, where a teacher says their own word for an order, a deal, a farm job, a find or a technology, and the class takes it in. At 15 they come of age: non-specialists who can join a trade by fluency. Their fluency in every trade's language is measured then, without changing anything.</p>
+          <p id="town-school-summary" class="hint"></p>
+          <ul id="town-school-latest" class="event-list"></ul>
+        </section>
+
+        <section id="town-academy-panel" class="town-market-panel" aria-label="The academy" hidden>
+          <h2>The academy and its technologies</h2>
+          <p class="hint">Scientists research at the academy and discover technologies in order. A discovery is something nobody has a word for yet. People tell each other about the technologies they know; someone comes to know one only if they understood and, checked by asking, the word makes the difference: from the teller's word for it they'd pick it out of all eight at least 50 times in 100 more often than from the teller's words for the others. A lucky guess isn't enough, and neither is answering "mortar" to everything. A technology helps only the workers who understand it. Click a name to ring everyone who understands it on the map.</p>
+          <p id="town-academy-summary" class="hint"></p>
+          <div id="town-academy-techs" class="techs"></div>
+        </section>
+
+        <section id="town-words-panel" class="grid-section" aria-label="Words by trade" hidden>
           <div class="section-header">
-            <h2>Each team's words</h2>
-            <label>Team <select id="town-team"></select></label>
+            <h2>Words by trade</h2>
+            <label>Trade <select id="town-words-trade"></select></label>
+            <label>Who <select id="town-words-member"></select></label>
           </div>
-          <p class="hint">A foreman's favourite word for every order, laid out by piece and size, one grid per place. Builders work in teams, one per foreman, so each team can grow its own dialect. Dashed cells are kinds of piece the plan hasn't called for yet.</p>
-          <div id="town-team-grid" class="grids"></div>
+          <p id="town-words-game" class="hint words-game">One person's favourite words in their trade's kind of conversation. Foremen's orders are laid out by piece and size, one grid per place (dashed: kinds of piece not used yet); builders work in teams, one per foreman, so teams can grow dialects. Each trade talks about different things, but they share one set of syllables, so the same word can mean different things in different trades.</p>
+          <div id="town-words-grid" class="grids"></div>
         </section>
 
         <section id="town-charts" class="charts-panel" aria-label="Town charts" hidden>
@@ -155,6 +198,34 @@
             <figure>
               <figcaption>How well adult non-specialists understand the foremen (as builders), against the builders' own median: measured once a year</figcaption>
               <div id="chart-town-fluency" class="chart"></div>
+            </figure>
+            <figure class="market-only">
+              <figcaption>Understood, by kind of conversation (recent): building orders, buying and selling, farm talk, foragers' calls, chat</figcaption>
+              <div id="chart-town-games" class="chart"></div>
+            </figure>
+            <figure class="market-only">
+              <figcaption>Food: days of food at home per person, and food on the shop shelves (units)</figcaption>
+              <div id="chart-town-food" class="chart"></div>
+            </figure>
+            <figure class="market-only">
+              <figcaption>Loads of bricks delivered to the tower (all time), and the share of deals that went wrong</figcaption>
+              <div id="chart-town-bricks" class="chart"></div>
+            </figure>
+            <figure class="market-only">
+              <figcaption>The trades: farmers, foragers, artisans, merchants, shopkeepers</figcaption>
+              <div id="chart-town-trades" class="chart"></div>
+            </figure>
+            <figure class="school-only">
+              <figcaption>Fluency at coming of age (the latest 10 children: mean over the trades' languages, and their best trade): with a school, and the same town with none</figcaption>
+              <div id="chart-town-coming-of-age" class="chart"></div>
+            </figure>
+            <figure class="academy-only">
+              <figcaption>Technologies: the share of adults who understand each one</figcaption>
+              <div id="chart-town-techs" class="chart"></div>
+            </figure>
+            <figure class="academy-only">
+              <figcaption id="chart-town-spread-caption">How far the chosen technology has spread from the academy: share of adults who understand it, near, in town, and on the outskirts</figcaption>
+              <div id="chart-town-spread" class="chart"></div>
             </figure>
           </div>
         </section>
